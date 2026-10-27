@@ -6,9 +6,9 @@
 
 ### [▶ Play now](https://adarshsingh2508.github.io/Flicko/)
 
-[![Play now](https://img.shields.io/badge/▶_Play_now-live_demo-22d3ee?style=for-the-badge)](https://adarshsingh2508.github.io/Flicko/)
+[![Play now](https://img.shields.io/badge/▶_Play_now-live_demo-2742F5?style=for-the-badge)](https://adarshsingh2508.github.io/Flicko/)
 [![Build & Deploy](https://github.com/AdarshSingh2508/Flicko/actions/workflows/deploy.yml/badge.svg)](https://github.com/AdarshSingh2508/Flicko/actions/workflows/deploy.yml)
-[![License: MIT](https://img.shields.io/badge/license-MIT-ff4d8d.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/license-MIT-E8530A.svg)](LICENSE)
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/AdarshSingh2508/Flicko)
 
 ![React](https://img.shields.io/badge/React-18-61dafb?logo=react&logoColor=white)
@@ -76,7 +76,7 @@ src/
     ai.ts                 # easy / medium / minimax AI
   components/
     Board.tsx             # 3x3 grid + animated winning strike line
-    Marks.tsx             # neon X and O glyphs
+    Marks.tsx             # printed X and O marks
     Scoreboard.tsx        # wins, ties, streak
 .github/workflows/
   deploy.yml              # CI build + automatic GitHub Pages deploy
