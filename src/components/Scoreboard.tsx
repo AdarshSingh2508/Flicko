@@ -22,9 +22,9 @@ interface Props {
 function Tile({ label, value, tone }: { label: string; value: number; tone: 'cyan' | 'coral' | 'slate' }) {
   const color =
     tone === 'cyan'
-      ? 'text-neon-cyan border-neon-cyan/30 shadow-glowCyan/20'
+      ? 'text-neon-cyan border-neon-cyan/30'
       : tone === 'coral'
-        ? 'text-neon-coral border-neon-coral/30 shadow-glowCoral/20'
+        ? 'text-neon-coral border-neon-coral/30'
         : 'text-slate-300 border-white/10'
   return (
     <div className={`rounded-2xl border bg-white/[0.04] px-3 py-2.5 text-center backdrop-blur-md ${color}`}>

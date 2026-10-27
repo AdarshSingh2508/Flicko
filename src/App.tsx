@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import confetti from 'canvas-confetti'
 import { Bot, RotateCcw, Timer, Trash2, Undo2, Users, Volume2, VolumeX } from 'lucide-react'
 import { Board } from './components/Board'
@@ -27,7 +27,7 @@ function Segmented<T extends string>({
   label,
 }: {
   value: T
-  options: { id: T; label: string; icon?: React.ReactNode }[]
+  options: { id: T; label: string; icon?: ReactNode }[]
   onChange: (v: T) => void
   label: string
 }) {
@@ -341,7 +341,7 @@ export default function App() {
         </button>
       </div>
 
-      <footer className="mt-auto pt-4 text-center text-xs text-slate-500">
+      <footer className="mt-auto pb-12 pt-4 text-center text-xs text-slate-500">
         Designed &amp; developed by{' '}
         <a
           href="https://github.com/AdarshSingh2508"
