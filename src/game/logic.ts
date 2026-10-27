@@ -34,13 +34,17 @@ export function getResult(board: Board): Result | null {
 export const emptyCells = (board: Board): number[] =>
   board.reduce<number[]>((acc, c, i) => (c === null ? [...acc, i] : acc), [])
 
-/** Rebuild a board from an ordered list of moves (X always starts). */
-export function boardFromMoves(moves: readonly number[]): Board {
+export const otherPlayer = (p: Player): Player => (p === 'X' ? 'O' : 'X')
+
+/** Who plays the move at position `moveCount`, given who opened the round. */
+export const playerForMove = (moveCount: number, first: Player = 'X'): Player =>
+  moveCount % 2 === 0 ? first : otherPlayer(first)
+
+/** Rebuild a board from an ordered list of moves. */
+export function boardFromMoves(moves: readonly number[], first: Player = 'X'): Board {
   const board: Board = Array<Cell>(9).fill(null)
   moves.forEach((idx, i) => {
-    board[idx] = i % 2 === 0 ? 'X' : 'O'
+    board[idx] = playerForMove(i, first)
   })
   return board
 }
-
-export const playerForMove = (moveCount: number): Player => (moveCount % 2 === 0 ? 'X' : 'O')

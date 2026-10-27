@@ -1,24 +1,31 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import confetti from 'canvas-confetti'
-import { Bot, RotateCcw, Timer, Trash2, Undo2, Users, Volume2, VolumeX } from 'lucide-react'
+import { Bot, Timer, Undo2, Users, Volume2, VolumeX, Eraser } from 'lucide-react'
 import { Board } from './components/Board'
+import { Glyph } from './components/Marks'
 import { Scoreboard, type Scores, type Streak } from './components/Scoreboard'
 import { chooseMove, type Difficulty } from './game/ai'
-import { boardFromMoves, emptyCells, getResult, playerForMove } from './game/logic'
+import { boardFromMoves, emptyCells, getResult, otherPlayer, playerForMove, type Player } from './game/logic'
 import { playDraw, playTap, playTick, playWin } from './audio'
 
 type Mode = 'pvp' | 'ai'
 
 const TURN_MS = 5000
 const AI_DELAY_MS = 450
-const HUMAN = 'X' as const
-const AI = 'O' as const
+// How long a finished round stays on screen before the board prints a fresh one.
+const RESET_AFTER_WIN_MS = 3000
+const RESET_AFTER_DRAW_MS = 2200
+const HUMAN: Player = 'X'
+const AI: Player = 'O'
 
 const DIFFICULTIES: { id: Difficulty; label: string }[] = [
   { id: 'easy', label: 'Easy' },
   { id: 'medium', label: 'Medium' },
   { id: 'impossible', label: 'Impossible' },
 ]
+
+const SHADOW = 'shadow-[3px_3px_0_0_#1A2250]'
+const PRESS = 'active:translate-x-[3px] active:translate-y-[3px] active:shadow-none'
 
 function Segmented<T extends string>({
   value,
@@ -35,9 +42,9 @@ function Segmented<T extends string>({
     <div
       role="radiogroup"
       aria-label={label}
-      className="flex w-full rounded-2xl border border-white/10 bg-white/[0.04] p-1 backdrop-blur-md"
+      className={`flex w-full overflow-hidden rounded-md border-2 border-ink bg-paper ${SHADOW}`}
     >
-      {options.map((o) => {
+      {options.map((o, i) => {
         const active = o.id === value
         return (
           <button
@@ -46,10 +53,10 @@ function Segmented<T extends string>({
             aria-checked={active}
             onClick={() => onChange(o.id)}
             className={[
-              'flex flex-1 items-center justify-center gap-1.5 rounded-xl px-2 py-2 text-sm font-medium transition-all',
-              active
-                ? 'bg-white/10 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.18)]'
-                : 'text-slate-400 hover:text-slate-200',
+              'flex flex-1 items-center justify-center gap-1.5 px-2 py-2.5 text-sm font-semibold transition-colors',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-cobalt',
+              i > 0 ? 'border-l-2 border-ink' : '',
+              active ? 'bg-ink text-paper' : 'text-ink hover:bg-ink/10',
             ].join(' ')}
           >
             {o.icon}
@@ -67,17 +74,22 @@ export default function App() {
   const [timed, setTimed] = useState(false)
   const [muted, setMuted] = useState(false)
 
-  // The whole position is derived from the ordered move list; undo = pop.
+  // The position is derived from the ordered move list; undo = drop moves.
   const [moves, setMoves] = useState<number[]>([])
+  // Who opens the round. It alternates so neither side always moves first.
+  const [first, setFirst] = useState<Player>('X')
+  // Bumps every round so the grid and marks are printed again.
+  const [round, setRound] = useState(0)
   const [scores, setScores] = useState<Scores>({ X: 0, O: 0, ties: 0 })
   const [streak, setStreak] = useState<Streak>({ player: null, count: 0 })
   const [timeLeft, setTimeLeft] = useState(TURN_MS)
 
-  const board = useMemo(() => boardFromMoves(moves), [moves])
+  const board = useMemo(() => boardFromMoves(moves, first), [moves, first])
   const result = useMemo(() => getResult(board), [board])
-  const current = playerForMove(moves.length)
+  const current = playerForMove(moves.length, first)
   const aiThinking = mode === 'ai' && current === AI && !result
   const gameOver = result !== null
+  const resetMs = result?.winner ? RESET_AFTER_WIN_MS : RESET_AFTER_DRAW_MS
 
   const mutedRef = useRef(muted)
   mutedRef.current = muted
@@ -92,16 +104,35 @@ export default function App() {
     (index: number) => {
       setMoves((prev) => {
         if (prev.includes(index)) return prev
-        const before = getResult(boardFromMoves(prev))
-        if (before) return prev
+        if (getResult(boardFromMoves(prev, first))) return prev
         return [...prev, index]
       })
     },
-    [],
+    [first],
   )
 
-  // Side effects that follow a finished game (score, streak, sound, confetti).
-  // Keyed on the move count so each finished game is scored exactly once.
+  // Start the next round: clear the board and swap who opens.
+  const nextRound = useCallback(() => {
+    setMoves([])
+    setFirst((f) => otherPlayer(f))
+    setRound((r) => r + 1)
+  }, [])
+
+  // Start over with the default opener (used when the settings change).
+  const restart = useCallback(() => {
+    setMoves([])
+    setFirst('X')
+    setRound((r) => r + 1)
+  }, [])
+
+  // The board resets itself a moment after someone wins or the round is drawn.
+  useEffect(() => {
+    if (!gameOver) return
+    const id = setTimeout(nextRound, resetMs)
+    return () => clearTimeout(id)
+  }, [gameOver, moves.length, resetMs, nextRound])
+
+  // Score, streak, sound and confetti for a finished round, exactly once per round.
   const scoredFor = useRef<number>(-1)
   useEffect(() => {
     if (!result) {
@@ -117,16 +148,10 @@ export default function App() {
       setStreak((st) => ({ player: w, count: st.player === w ? st.count + 1 : 1 }))
       sfx(playWin)
       if (mode === 'pvp' || w === HUMAN) {
-        const colors = w === 'X' ? ['#22d3ee', '#67e8f9', '#ffffff'] : ['#ff4d8d', '#fda4af', '#ffffff']
-        confetti({ particleCount: 120, spread: 80, origin: { y: 0.65 }, colors })
-        setTimeout(
-          () => confetti({ particleCount: 70, angle: 60, spread: 60, origin: { x: 0, y: 0.7 }, colors }),
-          180,
-        )
-        setTimeout(
-          () => confetti({ particleCount: 70, angle: 120, spread: 60, origin: { x: 1, y: 0.7 }, colors }),
-          180,
-        )
+        const colors = w === 'X' ? ['#2742F5', '#1A2250', '#8FA0FF'] : ['#E8530A', '#1A2250', '#FFB28A']
+        confetti({ particleCount: 110, spread: 80, origin: { y: 0.65 }, colors })
+        setTimeout(() => confetti({ particleCount: 60, angle: 60, spread: 60, origin: { x: 0, y: 0.7 }, colors }), 180)
+        setTimeout(() => confetti({ particleCount: 60, angle: 120, spread: 60, origin: { x: 1, y: 0.7 }, colors }), 180)
       }
     } else {
       setScores((s) => ({ ...s, ties: s.ties + 1 }))
@@ -135,28 +160,27 @@ export default function App() {
     }
   }, [result, moves.length, mode, sfx])
 
-  // Tap sound for every newly placed marker (human, AI, or timeout move).
+  // Tap sound for every newly placed mark (human, AI, or timeout move).
   const lastCount = useRef(0)
   useEffect(() => {
     if (moves.length > lastCount.current && moves.length > 0) {
-      const placedBy = playerForMove(moves.length - 1)
-      // The finishing move gets the win/draw sound instead of the tap.
-      if (!getResult(boardFromMoves(moves))) sfx(() => playTap(placedBy))
+      const placedBy = playerForMove(moves.length - 1, first)
+      // The finishing move gets the win or draw sound instead of the tap.
+      if (!getResult(boardFromMoves(moves, first))) sfx(() => playTap(placedBy))
     }
     lastCount.current = moves.length
-  }, [moves, sfx])
+  }, [moves, first, sfx])
 
   // AI turn.
   useEffect(() => {
     if (!aiThinking) return
     const id = setTimeout(() => {
-      const idx = chooseMove(board, AI, difficulty)
-      play(idx)
+      play(chooseMove(board, AI, difficulty))
     }, AI_DELAY_MS)
     return () => clearTimeout(id)
   }, [aiThinking, board, difficulty, play])
 
-  // Speed run: 5 seconds per human turn, a random move is played on timeout.
+  // Speed run: 5 seconds per human turn; a random move is played on timeout.
   const playRef = useRef(play)
   playRef.current = play
   const boardRef = useRef(board)
@@ -184,8 +208,6 @@ export default function App() {
     return () => clearInterval(id)
   }, [timerActive, moves.length, sfx])
 
-  const newGame = useCallback(() => setMoves([]), [])
-
   const resetScores = () => {
     setScores({ X: 0, O: 0, ties: 0 })
     setStreak({ player: null, count: 0 })
@@ -194,119 +216,143 @@ export default function App() {
   const changeMode = (m: Mode) => {
     if (m === mode) return
     setMode(m)
-    setMoves([])
+    restart()
     resetScores()
   }
 
-  const canUndo = !timed && !gameOver && moves.length > 0 && !aiThinking
+  // Undo: one move in two-player mode; your last move and everything after it against the AI.
+  const lastHumanIndex = (() => {
+    for (let i = moves.length - 1; i >= 0; i--) if (playerForMove(i, first) === HUMAN) return i
+    return -1
+  })()
+  const canUndo =
+    !timed && !gameOver && !aiThinking && (mode === 'pvp' ? moves.length > 0 : lastHumanIndex >= 0)
   const undo = () => {
     if (!canUndo) return
-    setMoves((prev) => {
-      // Against the AI, roll back to the human's previous turn (AI move + human move).
-      const drop = mode === 'ai' ? Math.min(2, prev.length) : 1
-      return prev.slice(0, prev.length - drop)
-    })
+    setMoves((prev) => (mode === 'pvp' ? prev.slice(0, -1) : prev.slice(0, lastHumanIndex)))
   }
 
   const statusText = result
     ? result.winner
       ? mode === 'ai'
         ? result.winner === HUMAN
-          ? 'You win!'
+          ? 'You win'
           : 'AI wins'
-        : `${result.winner} wins!`
-      : "It's a draw"
+        : `${result.winner} wins`
+      : 'Draw'
     : aiThinking
-      ? 'AI is thinking…'
+      ? 'AI is thinking'
       : mode === 'ai'
         ? 'Your turn'
         : `${current}'s turn`
 
-  const statusColor = result
-    ? result.winner === 'X'
-      ? 'text-neon-cyan'
-      : result.winner === 'O'
-        ? 'text-neon-coral'
-        : 'text-slate-300'
-    : current === 'X'
-      ? 'text-neon-cyan'
-      : 'text-neon-coral'
-
   const timePct = Math.max(0, Math.min(100, (timeLeft / TURN_MS) * 100))
-  const urgent = timeLeft <= 2000
+  const urgent = timeLeft <= 2000 && timerActive
+  const statusPlayer: Player | null = result ? result.winner : current
+
+  const softButton = `inline-flex items-center justify-center gap-2 rounded-md border-2 border-ink bg-paper px-3.5 py-2 text-sm font-semibold ${SHADOW} ${PRESS} transition-[transform,box-shadow] hover:bg-white/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cobalt focus-visible:ring-offset-2 focus-visible:ring-offset-paper disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none disabled:active:translate-x-0 disabled:active:translate-y-0`
 
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-xl flex-col items-center gap-5 px-4 py-8 sm:py-12">
-      <header className="text-center">
-        <h1 className="font-display text-3xl font-extrabold tracking-wider sm:text-4xl">
-          <span className="text-neon-cyan drop-shadow-[0_0_12px_rgba(34,211,238,0.8)]">NEON</span>{' '}
-          <span className="text-neon-coral drop-shadow-[0_0_12px_rgba(255,77,141,0.8)]">TIC-TAC-TOE</span>
+    <div className="mx-auto grid min-h-screen w-full max-w-5xl grid-cols-1 content-start gap-x-14 gap-y-8 px-5 py-8 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] lg:grid-rows-[auto_1fr] lg:py-14">
+      {/* Title and settings */}
+      <header className="flex flex-col gap-6 lg:col-start-1 lg:row-start-1">
+        <h1 className="text-[clamp(2.6rem,11vw,4rem)] font-extrabold leading-[0.88] tracking-tight lg:text-[5.75rem]">
+          tic tac toe
         </h1>
-        <p className="mt-1 text-sm text-slate-400">First to three in a row wins.</p>
+
+        <div className="flex flex-col gap-3">
+          <Segmented
+            label="Game mode"
+            value={mode}
+            onChange={changeMode}
+            options={[
+              { id: 'pvp', label: 'Two players', icon: <Users size={16} /> },
+              { id: 'ai', label: 'Versus AI', icon: <Bot size={16} /> },
+            ]}
+          />
+          {mode === 'ai' && (
+            <Segmented
+              label="AI difficulty"
+              value={difficulty}
+              onChange={(d) => {
+                setDifficulty(d)
+                restart()
+              }}
+              options={DIFFICULTIES}
+            />
+          )}
+          <button
+            role="switch"
+            aria-checked={timed}
+            onClick={() => {
+              setTimed((t) => !t)
+              restart()
+            }}
+            className={[
+              `flex items-center justify-between gap-3 rounded-md border-2 border-ink px-3.5 py-2.5 text-sm font-semibold ${SHADOW} ${PRESS} transition-[transform,box-shadow,background-color]`,
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cobalt focus-visible:ring-offset-2 focus-visible:ring-offset-paper',
+              timed ? 'bg-ink text-paper' : 'bg-paper hover:bg-white/60',
+            ].join(' ')}
+          >
+            <span className="flex items-center gap-2">
+              <Timer size={16} /> Speed run: 5 seconds a move
+            </span>
+            <span
+              aria-hidden="true"
+              className={`flex h-5 w-9 items-center rounded-full border-2 px-0.5 ${timed ? 'justify-end border-paper' : 'justify-start border-ink'}`}
+            >
+              <span className={`h-3 w-3 rounded-full ${timed ? 'bg-paper' : 'bg-ink'}`} />
+            </span>
+          </button>
+        </div>
       </header>
 
-      <div className="flex w-full flex-col gap-2.5">
-        <Segmented
-          label="Game mode"
-          value={mode}
-          onChange={changeMode}
-          options={[
-            { id: 'pvp', label: 'Pass & Play', icon: <Users size={16} /> },
-            { id: 'ai', label: 'vs AI', icon: <Bot size={16} /> },
-          ]}
-        />
-        {mode === 'ai' && (
-          <Segmented
-            label="AI difficulty"
-            value={difficulty}
-            onChange={(d) => {
-              setDifficulty(d)
-              setMoves([])
-            }}
-            options={DIFFICULTIES}
-          />
-        )}
-        <button
-          role="switch"
-          aria-checked={timed}
-          onClick={() => {
-            setTimed((t) => !t)
-            setMoves([])
-          }}
-          className={[
-            'flex items-center justify-between rounded-2xl border px-4 py-2.5 text-sm font-medium backdrop-blur-md transition-all',
-            timed
-              ? 'border-amber-300/40 bg-amber-300/10 text-amber-200'
-              : 'border-white/10 bg-white/[0.04] text-slate-400 hover:text-slate-200',
-          ].join(' ')}
-        >
-          <span className="flex items-center gap-2">
-            <Timer size={16} /> Speed run · 5s per move
-          </span>
-          <span className="text-xs uppercase tracking-widest">{timed ? 'On' : 'Off'}</span>
-        </button>
-      </div>
-
-      <Scoreboard scores={scores} streak={streak} labelX={labelX} labelO={labelO} />
-
-      <div className="flex w-full flex-col items-center gap-3">
-        <div
-          aria-live="polite"
-          className={`font-display text-xl font-bold tracking-wide drop-shadow-[0_0_10px_currentColor] ${statusColor}`}
-        >
-          {statusText}
+      {/* The board */}
+      <main className="flex flex-col gap-4 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:pt-3">
+        <div className="mx-auto flex w-full max-w-[34rem] items-center justify-between gap-4">
+          <div aria-live="polite" className="flex items-center gap-3 text-3xl font-extrabold leading-none sm:text-4xl">
+            {statusPlayer ? <Glyph player={statusPlayer} size={34} /> : <span className="h-[34px] w-[34px]" />}
+            <span>{statusText}</span>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={undo}
+              disabled={!canUndo}
+              title={timed ? 'Undo is off in speed run' : 'Undo your last move'}
+              className={softButton}
+            >
+              <Undo2 size={16} /> Undo
+            </button>
+          </div>
         </div>
 
-        {timed && (
-          <div className="h-1.5 w-full max-w-[420px] overflow-hidden rounded-full bg-white/10" aria-hidden="true">
-            <div
-              className={`h-full rounded-full transition-[width] duration-100 ease-linear ${
-                urgent && timerActive ? 'pulse-bar bg-rose-400' : 'bg-amber-300'
-              }`}
-              style={{ width: `${gameOver || aiThinking ? 100 : timePct}%` }}
-            />
-          </div>
-        )}
+        {/* One strip: the speed-run clock while playing, the next-round bar once a round ends. */}
+        <div className="mx-auto flex min-h-[2rem] w-full max-w-[34rem] items-center gap-3">
+          {gameOver ? (
+            <>
+              <div className="h-2.5 flex-1 overflow-hidden rounded-full border-2 border-ink">
+                <div
+                  key={`reset-${round}-${moves.length}`}
+                  className="reset-bar h-full bg-ink"
+                  style={{ animationDuration: `${resetMs}ms` }}
+                />
+              </div>
+              <button
+                onClick={nextRound}
+                className="shrink-0 rounded text-sm font-semibold underline decoration-2 underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cobalt"
+              >
+                Next round now
+              </button>
+            </>
+          ) : timed ? (
+            <div className="h-2.5 flex-1 overflow-hidden rounded-full border-2 border-ink" aria-hidden="true">
+              <div
+                className={`h-full transition-[width] duration-100 ease-linear ${urgent ? 'pulse-bar bg-flame' : 'bg-ink'}`}
+                style={{ width: `${aiThinking ? 100 : timePct}%` }}
+              />
+            </div>
+          ) : null}
+        </div>
 
         <Board
           board={board}
@@ -314,40 +360,26 @@ export default function App() {
           winner={result?.winner ?? null}
           disabled={gameOver || aiThinking}
           currentPlayer={current}
+          round={round}
           onCellClick={(i) => play(i)}
         />
-      </div>
+      </main>
 
-      <div className="grid w-full max-w-[420px] grid-cols-3 gap-2.5">
-        <button
-          onClick={newGame}
-          className="flex items-center justify-center gap-2 rounded-2xl border border-neon-cyan/40 bg-neon-cyan/10 px-3 py-2.5 text-sm font-semibold text-neon-cyan transition hover:bg-neon-cyan/20"
-        >
-          <RotateCcw size={16} /> New game
+      {/* Tally */}
+      <section className="lg:col-start-1 lg:row-start-2">
+        <Scoreboard scores={scores} streak={streak} labelX={labelX} labelO={labelO} />
+        <button onClick={resetScores} className={`${softButton} mt-5`}>
+          <Eraser size={16} /> Clear scores
         </button>
-        <button
-          onClick={undo}
-          disabled={!canUndo}
-          title={timed ? 'Undo is disabled in speed run mode' : 'Undo last move'}
-          className="flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm font-semibold text-slate-200 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          <Undo2 size={16} /> Undo
-        </button>
-        <button
-          onClick={resetScores}
-          className="flex items-center justify-center gap-2 rounded-2xl border border-neon-coral/40 bg-neon-coral/10 px-3 py-2.5 text-sm font-semibold text-neon-coral transition hover:bg-neon-coral/20"
-        >
-          <Trash2 size={16} /> Reset scores
-        </button>
-      </div>
+      </section>
 
-      <footer className="mt-auto pb-12 pt-4 text-center text-xs text-slate-500">
-        Designed &amp; developed by{' '}
+      <footer className="pb-14 text-sm text-ink-soft lg:col-span-2">
+        Designed and developed by{' '}
         <a
           href="https://github.com/AdarshSingh2508"
           target="_blank"
           rel="noopener noreferrer"
-          className="font-semibold text-slate-300 underline decoration-neon-cyan/50 underline-offset-4 transition hover:text-neon-cyan"
+          className="font-bold text-ink underline decoration-2 underline-offset-4 hover:text-cobalt"
         >
           Adarsh Singh
         </a>
@@ -356,8 +388,8 @@ export default function App() {
       <button
         onClick={() => setMuted((m) => !m)}
         aria-pressed={muted}
-        aria-label={muted ? 'Unmute sound' : 'Mute sound'}
-        className="fixed bottom-5 right-5 z-10 flex h-12 w-12 items-center justify-center rounded-full border border-white/15 bg-slate-900/70 text-slate-200 shadow-lg backdrop-blur-md transition hover:scale-105 hover:bg-slate-800"
+        aria-label={muted ? 'Turn sound on' : 'Turn sound off'}
+        className={`fixed bottom-5 right-5 z-10 flex h-12 w-12 items-center justify-center rounded-md border-2 border-ink bg-paper ${SHADOW} ${PRESS} transition-[transform,box-shadow] hover:bg-white/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cobalt focus-visible:ring-offset-2 focus-visible:ring-offset-paper`}
       >
         {muted ? <VolumeX size={20} /> : <Volume2 size={20} />}
       </button>

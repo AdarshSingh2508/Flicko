@@ -4,19 +4,17 @@ export default {
   theme: {
     extend: {
       colors: {
-        ink: '#0b1020',
-        neon: {
-          cyan: '#22d3ee',
-          coral: '#ff4d8d',
+        // A two-ink print: blue-black ink on cool paper, cobalt for X, orange for O.
+        paper: '#E8ECF4',
+        ink: {
+          DEFAULT: '#1A2250',
+          soft: '#5B6384',
         },
+        cobalt: '#2742F5',
+        flame: '#E8530A',
       },
       fontFamily: {
-        display: ['"Orbitron"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-        sans: ['"Inter"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-      },
-      boxShadow: {
-        glowCyan: '0 0 24px rgba(34, 211, 238, 0.45)',
-        glowCoral: '0 0 24px rgba(255, 77, 141, 0.45)',
+        sans: ['"Bricolage Grotesque"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
     },
   },

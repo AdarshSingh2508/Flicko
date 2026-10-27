@@ -1,8 +1,8 @@
 <div align="center">
 
-# Neon Tic-Tac-Toe
+# Flicko: Tic-Tac-Toe
 
-**A sleek, dark-mode Tic-Tac-Toe with glowing neon accents, an unbeatable Minimax AI, a speed-run timer, synthesized sound effects and confetti.**
+**Tic-Tac-Toe printed in two inks. Play a friend or an unbeatable AI. The board clears itself after every round, so you never touch a reset button.**
 
 ### [▶ Play now](https://adarshsingh2508.github.io/Flicko/)
 
@@ -22,16 +22,17 @@
 
 ## Features
 
-- **Pass & Play**: local two-player on the same device.
-- **vs AI** with three difficulties:
+- **Rounds reset themselves**: when someone wins or the round is drawn, the result stays up for a few seconds, then the board prints a fresh grid. Tap **Next round now** to skip the wait. The opening player alternates every round.
+- **Two players**: local pass and play on the same device.
+- **Versus AI** with three difficulties:
   - **Easy**: random valid moves.
   - **Medium**: takes wins and blocks your wins most of the time, with a bit of randomness so it can be beaten.
   - **Impossible**: classic Minimax with alpha-beta pruning. It cannot be beaten (your best result is a draw).
 - **Speed run mode**: 5-second timer per move. If time runs out, a random move is played for you.
-- **Scoreboard**: X wins, O wins, ties and the current win streak, with a **Reset scores** button.
-- **Undo** the last move (in vs-AI mode it rolls back your move and the AI's reply). Disabled in speed run mode.
-- **Visuals**: glassmorphism board, cyan glow for X, coral/pink glow for O, animated marker draw-in, an animated strike-through line on the winning row, column or diagonal, and a confetti burst on victory.
-- **Audio**: every sound is synthesized with the Web Audio API, so there are no audio files to load. Crisp tap when placing a marker, a high chime on a win, a low buzz on a draw, and a floating mute/unmute button.
+- **Tally scoreboard**: wins and draws are kept as tally marks, with the current win streak and a **Clear scores** button.
+- **Undo** your last move (against the AI it rolls back your move and everything after it). Off in speed run mode.
+- **Look**: a two-ink print style. X prints in cobalt blue and O in orange (a pairing that is also easy to tell apart with colour-blindness), on cool paper with a hand-drawn `#` grid. Marks are slightly off-register and overprint like a real print run. A hand-drawn line strikes through the winning row, and confetti marks a victory. Set in Bricolage Grotesque.
+- **Audio**: every sound is synthesized with the Web Audio API, so there are no audio files to load. Crisp tap when placing a mark, a high chime on a win, a low buzz on a draw, and a mute button.
 - Responsive, keyboard accessible, and respects `prefers-reduced-motion`.
 
 ## Tech stack

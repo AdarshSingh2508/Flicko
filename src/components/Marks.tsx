@@ -1,44 +1,64 @@
 import type { Player } from '../game/logic'
 
-/** Neon X / O glyphs drawn as SVG so they can animate and glow. */
-export function Mark({ player }: { player: Player }) {
-  if (player === 'X') {
-    return (
-      <svg
-        viewBox="0 0 100 100"
-        className="h-3/5 w-3/5"
-        style={{ filter: 'drop-shadow(0 0 8px rgba(34,211,238,0.9))' }}
-        aria-label="X"
-      >
-        <line
-          x1="22" y1="22" x2="78" y2="78"
+/** The two inks. X prints in cobalt, O in orange. */
+export const INK: Record<Player, string> = {
+  X: '#2742F5',
+  O: '#E8530A',
+}
+
+// Slightly curved, hand-drawn strokes (not perfect geometry).
+const X_STROKES = ['M24 22 C 38 38, 60 62, 77 79', 'M77 21 C 62 38, 40 62, 23 78']
+const O_STROKES = ['M58 20 C 82 22, 86 58, 72 76 C 58 92, 26 84, 21 58 C 17 34, 38 20, 56 21']
+
+function Strokes({ player, animate }: { player: Player; animate: boolean }) {
+  const paths = player === 'X' ? X_STROKES : O_STROKES
+  return (
+    <>
+      {paths.map((d, i) => (
+        <path
+          key={i}
+          d={d}
           pathLength={1}
-          stroke="#22d3ee" strokeWidth="11" strokeLinecap="round"
-          className="mark-draw"
+          fill="none"
+          stroke={INK[player]}
+          strokeWidth={10}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className={animate ? (i === 1 ? 'mark-draw mark-draw-2' : 'mark-draw') : undefined}
         />
-        <line
-          x1="78" y1="22" x2="22" y2="78"
-          pathLength={1}
-          stroke="#22d3ee" strokeWidth="11" strokeLinecap="round"
-          className="mark-draw mark-draw-2"
-        />
-      </svg>
-    )
-  }
+      ))}
+    </>
+  )
+}
+
+/**
+ * A printed mark. A paler copy sits a few pixels off-register underneath and the
+ * layers multiply, so the ink looks overprinted, like a two-colour print run.
+ */
+export function Mark({ player, ghost = false }: { player: Player; ghost?: boolean }) {
   return (
     <svg
       viewBox="0 0 100 100"
-      className="h-3/5 w-3/5"
-      style={{ filter: 'drop-shadow(0 0 8px rgba(255,77,141,0.9))' }}
-      aria-label="O"
+      className="h-[72%] w-[72%] overflow-visible"
+      style={{ mixBlendMode: 'multiply' }}
+      role="img"
+      aria-label={player}
     >
-      <circle
-        cx="50" cy="50" r="30"
-        pathLength={1}
-        fill="none" stroke="#ff4d8d" strokeWidth="11" strokeLinecap="round"
-        className="mark-draw"
-        transform="rotate(-90 50 50)"
-      />
+      <g transform="translate(3 2.5)" opacity={0.38}>
+        <Strokes player={player} animate={!ghost} />
+      </g>
+      <g>
+        <Strokes player={player} animate={!ghost} />
+      </g>
+    </svg>
+  )
+}
+
+/** Small static X or O used as a player label. */
+export function Glyph({ player, size = 28 }: { player: Player; size?: number }) {
+  return (
+    <svg viewBox="0 0 100 100" width={size} height={size} aria-hidden="true" className="shrink-0">
+      <Strokes player={player} animate={false} />
     </svg>
   )
 }

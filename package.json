@@ -1,8 +1,8 @@
 {
-  "name": "neon-tic-tac-toe",
+  "name": "flicko",
   "private": true,
   "version": "1.0.0",
-  "description": "Neon Tic-Tac-Toe: PvP, unbeatable Minimax AI, speed run mode, synthesized sound and confetti.",
+  "description": "Tic-Tac-Toe printed in two inks. Two players or an unbeatable Minimax AI, speed run mode, and rounds that reset themselves.",
   "author": "Adarsh Singh <https://github.com/AdarshSingh2508>",
   "license": "MIT",
   "homepage": "https://adarshsingh2508.github.io/Flicko/",
