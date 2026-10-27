@@ -4,12 +4,12 @@
 
 **A sleek, dark-mode Tic-Tac-Toe with glowing neon accents, an unbeatable Minimax AI, a speed-run timer, synthesized sound effects and confetti.**
 
-### [▶ Play now](https://adarshsingh2508.github.io/neon-tic-tac-toe/)
+### [▶ Play now](https://adarshsingh2508.github.io/Flicko/)
 
-[![Play now](https://img.shields.io/badge/▶_Play_now-live_demo-22d3ee?style=for-the-badge)](https://adarshsingh2508.github.io/neon-tic-tac-toe/)
-[![Build & Deploy](https://github.com/AdarshSingh2508/neon-tic-tac-toe/actions/workflows/deploy.yml/badge.svg)](https://github.com/AdarshSingh2508/neon-tic-tac-toe/actions/workflows/deploy.yml)
+[![Play now](https://img.shields.io/badge/▶_Play_now-live_demo-22d3ee?style=for-the-badge)](https://adarshsingh2508.github.io/Flicko/)
+[![Build & Deploy](https://github.com/AdarshSingh2508/Flicko/actions/workflows/deploy.yml/badge.svg)](https://github.com/AdarshSingh2508/Flicko/actions/workflows/deploy.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-ff4d8d.svg)](LICENSE)
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/AdarshSingh2508/neon-tic-tac-toe)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/AdarshSingh2508/Flicko)
 
 ![React](https://img.shields.io/badge/React-18-61dafb?logo=react&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6?logo=typescript&logoColor=white)
@@ -48,8 +48,8 @@
 Requires Node.js 18+.
 
 ```bash
-git clone https://github.com/AdarshSingh2508/neon-tic-tac-toe.git
-cd neon-tic-tac-toe
+git clone https://github.com/AdarshSingh2508/Flicko.git
+cd Flicko
 npm install
 npm run dev
 ```
