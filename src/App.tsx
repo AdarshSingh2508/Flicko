@@ -341,6 +341,18 @@ export default function App() {
         </button>
       </div>
 
+      <footer className="mt-auto pt-4 text-center text-xs text-slate-500">
+        Designed &amp; developed by{' '}
+        <a
+          href="https://github.com/AdarshSingh2508"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-semibold text-slate-300 underline decoration-neon-cyan/50 underline-offset-4 transition hover:text-neon-cyan"
+        >
+          Adarsh Singh
+        </a>
+      </footer>
+
       <button
         onClick={() => setMuted((m) => !m)}
         aria-pressed={muted}

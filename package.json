@@ -2,6 +2,15 @@
   "name": "neon-tic-tac-toe",
   "private": true,
   "version": "1.0.0",
+  "description": "Neon Tic-Tac-Toe: PvP, unbeatable Minimax AI, speed run mode, synthesized sound and confetti.",
+  "author": "Adarsh Singh <https://github.com/AdarshSingh2508>",
+  "license": "MIT",
+  "homepage": "https://adarshsingh2508.github.io/neon-tic-tac-toe/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AdarshSingh2508/neon-tic-tac-toe.git"
+  },
+  "keywords": ["tic-tac-toe", "react", "vite", "tailwindcss", "minimax", "game"],
   "type": "module",
   "scripts": {
     "dev": "vite",
