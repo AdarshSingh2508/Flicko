@@ -1,0 +1,89 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  color: #e2e8f0;
+  background:
+    radial-gradient(60rem 40rem at 15% -10%, rgba(34, 211, 238, 0.16), transparent 60%),
+    radial-gradient(50rem 36rem at 95% 110%, rgba(255, 77, 141, 0.16), transparent 60%),
+    #0b1020;
+  background-attachment: fixed;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Marker pop-in: the strokes draw themselves. */
+@keyframes draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes pop {
+  0% {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes pulseBar {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.mark-draw {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+  animation: draw 0.35s ease-out both;
+}
+
+.mark-draw-2 {
+  animation-delay: 0.12s;
+}
+
+.mark-pop {
+  animation: pop 0.3s ease-out both;
+  transform-origin: center;
+}
+
+.win-line {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: draw 0.55s 0.15s ease-out forwards;
+}
+
+.pulse-bar {
+  animation: pulseBar 0.5s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mark-draw,
+  .mark-pop,
+  .win-line,
+  .pulse-bar {
+    animation-duration: 0.01ms;
+    animation-delay: 0s;
+  }
+}
