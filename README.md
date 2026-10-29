@@ -23,7 +23,8 @@
 ## Features
 
 - **Rounds reset themselves**: when someone wins or the round is drawn, the result stays up for a few seconds, then the board prints a fresh grid. Tap **Next round now** to skip the wait. The opening player alternates every round.
-- **Two players**: local pass and play on the same device.
+- **Online with a friend**: one of you picks **Host a game** and gets a 4-digit code (or an invite link). The other picks **Join game** and types it in. You each play on your own device, with live moves, a shared scoreboard and automatic rounds. No account or sign-up.
+- **Local**: two players pass and play on the same device.
 - **Versus AI** with three difficulties:
   - **Easy**: random valid moves.
   - **Medium**: takes wins and blocks your wins most of the time, with a bit of randomness so it can be beaten.
@@ -43,6 +44,7 @@
 - [Lucide](https://lucide.dev) icons
 - [canvas-confetti](https://github.com/catdad/canvas-confetti)
 - Web Audio API (no external audio assets)
+- [PeerJS](https://peerjs.com) (WebRTC) for online play
 
 ## Getting started
 
@@ -74,13 +76,33 @@ src/
   game/
     logic.ts              # board helpers, win/draw detection
     ai.ts                 # easy / medium / minimax AI
+  net/
+    protocol.ts           # message types, validation, 4-digit codes
+    useOnline.ts          # host / join hook built on PeerJS
   components/
     Board.tsx             # 3x3 grid + animated winning strike line
     Marks.tsx             # printed X and O marks
-    Scoreboard.tsx        # wins, ties, streak
+    Scoreboard.tsx        # tally marks, streak
+    Lobby.tsx             # host / join screen for online play
 .github/workflows/
   deploy.yml              # CI build + automatic GitHub Pages deploy
 ```
+
+## How online play works
+
+Online games are peer-to-peer, so the site stays a static page and needs no server of its own.
+
+- The host registers its 4-digit code as an id on the free public [PeerJS](https://peerjs.com) broker. The joining player looks that id up, and the two browsers connect directly over WebRTC. After the handshake, moves go straight between the two devices.
+- The host owns the game. The guest only asks to play a cell, and the host checks it is really the guest's turn before accepting it, then sends the full state back. Everything that arrives over the connection is validated before use.
+- The host plays X and the guest plays O. The opener alternates every round.
+- Only one friend can join a game. Once someone is connected, anyone else who tries the code is turned away.
+
+Things to know:
+
+- A code is only valid while the host has the page open and is waiting. If the host closes or leaves, the game ends.
+- The public broker is free and shared, so it can occasionally be slow or busy. If hosting or joining fails, try again.
+- A few strict networks (some school, office or mobile networks) block direct connections and online play may not connect there.
+- The 4-digit code is for convenience, not security. Share it only with the friend you want to play.
 
 ## Deployment
 
